@@ -5,11 +5,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import pickle
+import logging
+import traceback
 from typing import List, Dict, Tuple, Optional
 
 from .pose_estimator import PoseEstimator
 from .feature_extractor import FeatureExtractor
 from .video_processor import VideoProcessor
+
+logger = logging.getLogger(__name__)
 
 class RRBInference:
     """Inference engine for RRB detection"""
@@ -204,35 +208,47 @@ class RRBInference:
     def detect_rrb(self, video_path: str) -> Dict:
         """
         Main detection pipeline
-        
+
         Args:
             video_path: Path to video file
-            
+
         Returns:
             Detection results
         """
         try:
+            logger.info(f"Starting RRB detection for: {video_path}")
+
             # Preprocess video
+            logger.info("Preprocessing video...")
             sequences, video_info = self.preprocess_video(video_path)
-            
+            logger.info(f"Preprocessed {len(sequences)} sequences")
+
             # Predict
+            logger.info("Running model predictions...")
             predictions = self.predict_sequences(sequences)
-            
+            logger.info(f"Generated {len(predictions)} predictions")
+
             # Filter detections
+            logger.info("Filtering detections...")
             fps = video_info.get('fps', 30)
             filtered_detections = self.filter_detections(predictions, video_info, fps)
-            
+            logger.info(f"Filtered to {len(filtered_detections)} detections")
+
             # Aggregate results
+            logger.info("Aggregating results...")
             result = self.aggregate_detections(filtered_detections)
-            
+
             # Add metadata
             result['video_info'] = video_info
             result['total_sequences_analyzed'] = len(sequences)
             result['sequences_with_detections'] = len(filtered_detections)
-            
+
+            logger.info("Detection completed successfully")
             return result
-            
+
         except Exception as e:
+            logger.error(f"Error during RRB detection: {str(e)}")
+            logger.error(traceback.format_exc())
             return {
                 'detected': False,
                 'error': str(e),

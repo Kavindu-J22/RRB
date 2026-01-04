@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../services/video_service.dart';
 import 'results_screen.dart';
@@ -20,12 +22,15 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
   bool _isRecording = false;
   bool _isProcessing = false;
   String? _videoPath;
+  XFile? _videoFile; // Store XFile for web
   final VideoService _videoService = VideoService();
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    if (!kIsWeb) {
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -80,7 +85,52 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
     }
   }
 
+  // Web: Pick video using image_picker
+  Future<void> _pickVideoWeb() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? video = await picker.pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(minutes: 5),
+      );
+
+      if (video != null) {
+        setState(() {
+          _videoFile = video;
+          // Use video.name if available, otherwise create a default name
+          _videoPath = video.name.isNotEmpty ? video.name : 'video.mp4';
+          // Ensure it has .mp4 extension
+          if (!_videoPath!.toLowerCase().endsWith('.mp4') &&
+              !_videoPath!.toLowerCase().endsWith('.avi') &&
+              !_videoPath!.toLowerCase().endsWith('.mov') &&
+              !_videoPath!.toLowerCase().endsWith('.mkv')) {
+            _videoPath = '$_videoPath.mp4';
+          }
+        });
+
+        Fluttertoast.showToast(
+          msg: 'Video selected',
+          backgroundColor: Colors.green,
+        );
+
+        // Show process dialog
+        _showProcessDialog();
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Failed to pick video: $e',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
   Future<void> _startRecording() async {
+    // On web, use image picker instead
+    if (kIsWeb) {
+      await _pickVideoWeb();
+      return;
+    }
+
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
@@ -170,8 +220,12 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
     });
 
     try {
-      final videoFile = File(_videoPath!);
-      final result = await _videoService.detectRRB(videoFile);
+      // Read video bytes (works on both web and mobile)
+      final videoBytes = kIsWeb
+          ? await _videoFile!.readAsBytes()
+          : await File(_videoPath!).readAsBytes();
+
+      final result = await _videoService.detectRRB(_videoPath!, videoBytes);
 
       if (!mounted) return;
 
@@ -234,6 +288,51 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
       );
     }
 
+    // Web: Show simple button to pick video
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Record Video')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.videocam, size: 100, color: Colors.blue),
+              const SizedBox(height: 30),
+              const Text(
+                'Click the button below to record a video',
+                style: TextStyle(fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Your browser will ask for camera permission',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: _pickVideoWeb,
+                icon: const Icon(Icons.videocam, size: 30),
+                label: const Text(
+                  'Record Video',
+                  style: TextStyle(fontSize: 18),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 20,
+                  ),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Mobile/Desktop: Show camera preview
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return Scaffold(
         appBar: AppBar(title: const Text('Record Video')),

@@ -2,14 +2,17 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class VideoProcessor:
     """Video preprocessing and frame extraction for RRB detection"""
-    
+
     def __init__(self, target_fps: int = 30, img_size: Tuple[int, int] = (224, 224)):
         """
         Initialize video processor
-        
+
         Args:
             target_fps: Target frames per second for processing
             img_size: Target image size (width, height)
@@ -20,91 +23,177 @@ class VideoProcessor:
     def get_video_info(self, video_path: str) -> Dict[str, any]:
         """
         Get video metadata
-        
+
         Args:
             video_path: Path to video file
-            
+
         Returns:
             Dictionary containing video information
         """
-        cap = cv2.VideoCapture(video_path)
-        
-        info = {
-            'fps': int(cap.get(cv2.CAP_PROP_FPS)),
-            'frame_count': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
-            'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-            'duration': 0.0
-        }
-        
-        if info['fps'] > 0:
-            info['duration'] = info['frame_count'] / info['fps']
-        
-        cap.release()
-        return info
+        try:
+            cap = cv2.VideoCapture(video_path)
+
+            if not cap.isOpened():
+                logger.error(f"Cannot open video file: {video_path}")
+                raise ValueError(f"Cannot open video file: {video_path}")
+
+            info = {
+                'fps': int(cap.get(cv2.CAP_PROP_FPS)),
+                'frame_count': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+                'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                'duration': 0.0
+            }
+
+            # Validate video properties
+            if info['fps'] <= 0:
+                cap.release()
+                raise ValueError(f"Invalid FPS: {info['fps']}. Video may be corrupted.")
+
+            if info['frame_count'] <= 0:
+                cap.release()
+                raise ValueError("Video has no frames. Video may be corrupted or incomplete.")
+
+            if info['width'] <= 0 or info['height'] <= 0:
+                cap.release()
+                raise ValueError(f"Invalid dimensions: {info['width']}x{info['height']}")
+
+            if info['fps'] > 0:
+                info['duration'] = info['frame_count'] / info['fps']
+
+            cap.release()
+            return info
+
+        except Exception as e:
+            logger.error(f"Error getting video info: {str(e)}")
+            raise
     
     def extract_frames(self, video_path: str, max_frames: Optional[int] = None) -> List[np.ndarray]:
         """
-        Extract frames from video
-        
+        Extract frames from video with robust error handling
+
         Args:
             video_path: Path to video file
             max_frames: Maximum number of frames to extract
-            
+
         Returns:
             List of frames as numpy arrays
         """
-        cap = cv2.VideoCapture(video_path)
-        frames = []
-        frame_count = 0
-        
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            # Resize frame
-            frame_resized = cv2.resize(frame, self.img_size)
-            frames.append(frame_resized)
-            
-            frame_count += 1
-            if max_frames and frame_count >= max_frames:
-                break
-        
-        cap.release()
-        return frames
+        try:
+            cap = cv2.VideoCapture(video_path)
+
+            if not cap.isOpened():
+                logger.error(f"Cannot open video file: {video_path}")
+                raise ValueError(f"Cannot open video file: {video_path}")
+
+            frames = []
+            frame_count = 0
+            consecutive_failures = 0
+            max_consecutive_failures = 10  # Allow some frame read failures
+
+            while cap.isOpened():
+                ret, frame = cap.read()
+
+                if not ret:
+                    consecutive_failures += 1
+                    if consecutive_failures >= max_consecutive_failures:
+                        logger.warning(f"Too many consecutive frame read failures ({consecutive_failures}). Stopping.")
+                        break
+                    continue
+
+                # Reset failure counter on successful read
+                consecutive_failures = 0
+
+                # Validate frame
+                if frame is None or frame.size == 0:
+                    logger.warning(f"Empty frame at index {frame_count}")
+                    continue
+
+                try:
+                    # Resize frame
+                    frame_resized = cv2.resize(frame, self.img_size)
+                    frames.append(frame_resized)
+                    frame_count += 1
+                except Exception as e:
+                    logger.warning(f"Error resizing frame {frame_count}: {str(e)}")
+                    continue
+
+                if max_frames and frame_count >= max_frames:
+                    break
+
+            cap.release()
+
+            if len(frames) == 0:
+                raise ValueError("No frames could be extracted from video. Video may be corrupted or in an unsupported format.")
+
+            logger.info(f"Successfully extracted {len(frames)} frames from video")
+            return frames
+
+        except Exception as e:
+            logger.error(f"Error extracting frames: {str(e)}")
+            if 'cap' in locals():
+                cap.release()
+            raise
     
     def sample_frames(self, video_path: str, num_frames: int) -> List[np.ndarray]:
         """
         Sample fixed number of frames uniformly from video
-        
+
         Args:
             video_path: Path to video file
             num_frames: Number of frames to sample
-            
+
         Returns:
             List of sampled frames
         """
-        cap = cv2.VideoCapture(video_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        if total_frames <= num_frames:
-            # If video has fewer frames, extract all
-            return self.extract_frames(video_path)
-        
-        # Calculate frame indices to sample
-        indices = np.linspace(0, total_frames - 1, num_frames, dtype=int)
-        
-        frames = []
-        for idx in indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-            ret, frame = cap.read()
-            if ret:
-                frame_resized = cv2.resize(frame, self.img_size)
-                frames.append(frame_resized)
-        
-        cap.release()
-        return frames
+        try:
+            cap = cv2.VideoCapture(video_path)
+
+            if not cap.isOpened():
+                logger.error(f"Cannot open video file: {video_path}")
+                raise ValueError(f"Cannot open video file: {video_path}")
+
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            if total_frames <= 0:
+                cap.release()
+                raise ValueError("Cannot determine video frame count")
+
+            if total_frames <= num_frames:
+                cap.release()
+                # If video has fewer frames, extract all
+                return self.extract_frames(video_path)
+
+            # Calculate frame indices to sample
+            indices = np.linspace(0, total_frames - 1, num_frames, dtype=int)
+
+            frames = []
+            for idx in indices:
+                try:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+                    ret, frame = cap.read()
+
+                    if ret and frame is not None and frame.size > 0:
+                        frame_resized = cv2.resize(frame, self.img_size)
+                        frames.append(frame_resized)
+                    else:
+                        logger.warning(f"Failed to read frame at index {idx}")
+                except Exception as e:
+                    logger.warning(f"Error reading frame {idx}: {str(e)}")
+                    continue
+
+            cap.release()
+
+            if len(frames) == 0:
+                raise ValueError("No frames could be sampled from video")
+
+            return frames
+
+        except Exception as e:
+            logger.error(f"Error sampling frames: {str(e)}")
+            if 'cap' in locals():
+                cap.release()
+            raise
     
     def create_sequences(self, frames: List[np.ndarray], sequence_length: int, 
                         overlap: float = 0.5) -> List[np.ndarray]:

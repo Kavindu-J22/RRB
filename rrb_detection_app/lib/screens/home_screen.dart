@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../config/app_config.dart';
 
 /// Home Screen - Main dashboard
@@ -9,24 +7,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppConfig.appName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text(AppConfig.appName)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -40,37 +22,31 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Welcome, ${user?.name ?? "Clinician"}!',
-                      style: const TextStyle(
+                    const Text(
+                      'Welcome to RRB Detection!',
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      user?.organization ?? 'RRB Detection System',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      'Detect Repetitive and Restrictive Behaviors',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Quick Actions
             const Text(
               'Quick Actions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             // Record Video Button
             _ActionCard(
               icon: Icons.videocam,
@@ -82,7 +58,7 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-            
+
             // View Results Button
             _ActionCard(
               icon: Icons.assessment,
@@ -97,7 +73,7 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-            
+
             // Settings Button
             _ActionCard(
               icon: Icons.settings,
@@ -111,7 +87,7 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            
+
             // Info Section
             Card(
               color: Colors.blue[50],
@@ -207,10 +183,7 @@ class _ActionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -223,4 +196,3 @@ class _ActionCard extends StatelessWidget {
     );
   }
 }
-

@@ -4,9 +4,9 @@ class AppConfig {
   // For Android Device: Use computer's IP address (192.168.8.152)
   // For Web/Desktop: Use localhost
   static const String apiBaseUrl =
-      'http://192.168.8.152:3000/api'; // Node.js Backend
+      'http://localhost:3000/api'; // Node.js Backend
   static const String mlServiceUrl =
-      'http://192.168.8.152:5000/api/v1'; // ML Service
+      'http://localhost:5000/api/v1'; // ML Service
 
   // API Endpoints
   static const String loginEndpoint = '/auth/login';

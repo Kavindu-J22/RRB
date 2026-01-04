@@ -2,6 +2,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from typing import List, Dict, Tuple, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PoseEstimator:
     """Pose estimation using MediaPipe for RRB detection"""
@@ -95,38 +98,75 @@ class PoseEstimator:
     def process_video(self, video_path: str, max_frames: Optional[int] = None) -> Tuple[List[np.ndarray], int]:
         """
         Process entire video and extract landmarks from all frames
-        
+
         Args:
             video_path: Path to video file
             max_frames: Maximum number of frames to process (None for all)
-            
+
         Returns:
             Tuple of (list of landmark arrays, fps of video)
         """
-        cap = cv2.VideoCapture(video_path)
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        
-        landmarks_sequence = []
-        frame_count = 0
-        
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            landmarks = self.extract_landmarks(frame)
-            if landmarks is not None:
-                landmarks_sequence.append(landmarks)
-            else:
-                # If no pose detected, use zeros (will be handled in preprocessing)
-                landmarks_sequence.append(np.zeros(132))  # 33 landmarks * 4 values
-            
-            frame_count += 1
-            if max_frames and frame_count >= max_frames:
-                break
-        
-        cap.release()
-        return landmarks_sequence, fps
+        try:
+            cap = cv2.VideoCapture(video_path)
+
+            if not cap.isOpened():
+                logger.error(f"Cannot open video for pose estimation: {video_path}")
+                return [], 30  # Return empty with default FPS
+
+            fps = int(cap.get(cv2.CAP_PROP_FPS))
+            if fps <= 0:
+                logger.warning(f"Invalid FPS ({fps}), using default 30")
+                fps = 30
+
+            landmarks_sequence = []
+            frame_count = 0
+            consecutive_failures = 0
+            max_consecutive_failures = 10
+
+            while cap.isOpened():
+                ret, frame = cap.read()
+
+                if not ret:
+                    consecutive_failures += 1
+                    if consecutive_failures >= max_consecutive_failures:
+                        break
+                    continue
+
+                consecutive_failures = 0
+
+                if frame is None or frame.size == 0:
+                    logger.warning(f"Empty frame at index {frame_count}")
+                    landmarks_sequence.append(np.zeros(132))
+                    frame_count += 1
+                    continue
+
+                try:
+                    landmarks = self.extract_landmarks(frame)
+                    if landmarks is not None:
+                        landmarks_sequence.append(landmarks)
+                    else:
+                        # If no pose detected, use zeros (will be handled in preprocessing)
+                        landmarks_sequence.append(np.zeros(132))  # 33 landmarks * 4 values
+                except Exception as e:
+                    logger.warning(f"Error extracting landmarks from frame {frame_count}: {str(e)}")
+                    landmarks_sequence.append(np.zeros(132))
+
+                frame_count += 1
+                if max_frames and frame_count >= max_frames:
+                    break
+
+            cap.release()
+
+            if len(landmarks_sequence) == 0:
+                logger.warning("No landmarks extracted from video")
+
+            return landmarks_sequence, fps
+
+        except Exception as e:
+            logger.error(f"Error processing video for pose estimation: {str(e)}")
+            if 'cap' in locals():
+                cap.release()
+            return [], 30  # Return empty with default FPS
     
     def draw_landmarks(self, frame: np.ndarray, landmarks) -> np.ndarray:
         """

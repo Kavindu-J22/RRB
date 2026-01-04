@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../config/app_config.dart';
 
 /// Splash Screen - Initial loading screen
@@ -19,22 +17,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    // Initialize auth state
-    await authProvider.init();
-    
     // Wait for 2 seconds for splash effect
     await Future.delayed(const Duration(seconds: 2));
-    
-    // Navigate based on auth state
+
+    // Navigate directly to home (skip login)
     if (!mounted) return;
-    
-    if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
-    }
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override
@@ -67,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            
+
             // App Name
             const Text(
               AppConfig.appName,
@@ -78,30 +66,24 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            
+
             // Subtitle
             const Text(
               'AI-Powered Autism Screening',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
             const SizedBox(height: 50),
-            
+
             // Loading Indicator
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
             const SizedBox(height: 20),
-            
+
             // Version
             Text(
               'Version ${AppConfig.appVersion}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.white60,
-              ),
+              style: const TextStyle(fontSize: 12, color: Colors.white60),
             ),
           ],
         ),
@@ -109,4 +91,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
