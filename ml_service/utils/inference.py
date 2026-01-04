@@ -129,58 +129,92 @@ class RRBInference:
         
         return results
     
-    def filter_detections(self, predictions: List[Dict], video_info: Dict, 
+    def filter_detections(self, predictions: List[Dict], video_info: Dict,
                          fps: int = 30) -> List[Dict]:
         """
-        Filter detections based on confidence and duration
-        
+        Filter detections based on confidence with adaptive thresholding
+
         Args:
             predictions: List of predictions
             video_info: Video metadata
             fps: Frames per second
-            
+
         Returns:
             Filtered detections
         """
         filtered = []
-        
-        for pred in predictions:
-            # Filter by confidence
-            if pred['confidence'] < self.confidence_threshold:
+
+        # Log all predictions for debugging
+        logger.info(f"Analyzing {len(predictions)} predictions:")
+        for i, pred in enumerate(predictions):
+            logger.info(f"  Sequence {i}: {pred['class']} (confidence: {pred['confidence']:.4f})")
+            # Log top 3 probabilities
+            probs = pred.get('all_probabilities', {})
+            if probs:
+                sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True)[:3]
+                logger.info(f"    Top predictions: {', '.join([f'{k}={v:.4f}' for k, v in sorted_probs])}")
+
+        # Calculate sequence duration for metadata
+        sequence_duration = self.sequence_length / fps
+        logger.info(f"Sequence duration: {sequence_duration:.2f}s (sequence_length={self.sequence_length}, fps={fps:.2f})")
+
+        # Count non-normal predictions
+        non_normal_predictions = [p for p in predictions if p['class'] != 'normal']
+
+        # Use adaptive threshold: if we have RRB predictions, use lower threshold
+        adaptive_threshold = self.confidence_threshold
+        if non_normal_predictions:
+            # Find max confidence among non-normal predictions
+            max_rrb_confidence = max([p['confidence'] for p in non_normal_predictions])
+            logger.info(f"Max RRB confidence: {max_rrb_confidence:.4f}")
+
+            # If max RRB confidence is below threshold but above 0.5, use adaptive threshold
+            if max_rrb_confidence < self.confidence_threshold and max_rrb_confidence >= 0.5:
+                adaptive_threshold = 0.5
+                logger.info(f"Using adaptive threshold: {adaptive_threshold} (original: {self.confidence_threshold})")
+
+        for i, pred in enumerate(predictions):
+            # Log filtering decision
+            logger.debug(f"Sequence {i}: class={pred['class']}, conf={pred['confidence']:.4f}, " +
+                        f"threshold={adaptive_threshold}")
+
+            # Filter by confidence (use adaptive threshold)
+            if pred['confidence'] < adaptive_threshold:
+                logger.debug(f"  -> Filtered: confidence {pred['confidence']:.4f} < {adaptive_threshold}")
                 continue
-            
-            # Filter out 'normal' class unless it's the only detection
-            if pred['class'] == 'normal' and len(predictions) > 1:
+
+            # Filter out 'normal' class if we have RRB detections
+            if pred['class'] == 'normal' and non_normal_predictions:
+                logger.debug(f"  -> Filtered: 'normal' class with RRB predictions present")
                 continue
-            
-            # Calculate duration of this sequence
-            sequence_duration = self.sequence_length / fps
-            
-            # Filter by minimum duration
-            if sequence_duration >= self.min_duration:
-                pred['duration'] = sequence_duration
-                filtered.append(pred)
-        
+
+            # Add duration metadata
+            pred['duration'] = sequence_duration
+            filtered.append(pred)
+            logger.info(f"  -> ACCEPTED: {pred['class']} with confidence {pred['confidence']:.4f}")
+
+        logger.info(f"Filtering result: {len(filtered)} detections passed out of {len(predictions)}")
         return filtered
     
     def aggregate_detections(self, detections: List[Dict]) -> Dict:
         """
         Aggregate multiple detections into final result
-        
+
         Args:
             detections: List of filtered detections
-            
+
         Returns:
             Aggregated detection result
         """
         if not detections:
+            logger.warning("No detections passed filtering - returning 'normal' result")
             return {
                 'detected': False,
                 'primary_behavior': 'normal',
                 'confidence': 0.0,
                 'behaviors': []
             }
-        
+
         # Group by behavior type
         behavior_groups = {}
         for det in detections:
@@ -188,26 +222,30 @@ class RRBInference:
             if behavior not in behavior_groups:
                 behavior_groups[behavior] = []
             behavior_groups[behavior].append(det)
-        
+
         # Calculate average confidence for each behavior
         behavior_summary = []
         for behavior, dets in behavior_groups.items():
             avg_confidence = np.mean([d['confidence'] for d in dets])
             total_duration = sum([d.get('duration', 0) for d in dets])
-            
+
             behavior_summary.append({
                 'behavior': behavior,
                 'confidence': float(avg_confidence),
                 'occurrences': len(dets),
                 'total_duration': float(total_duration)
             })
-        
+
         # Sort by confidence
         behavior_summary.sort(key=lambda x: x['confidence'], reverse=True)
-        
+
         # Primary behavior is the one with highest confidence
         primary = behavior_summary[0] if behavior_summary else None
-        
+
+        logger.info(f"Aggregated {len(behavior_summary)} unique behaviors")
+        if primary:
+            logger.info(f"Primary behavior: {primary['behavior']} (confidence: {primary['confidence']:.4f})")
+
         return {
             'detected': len(behavior_summary) > 0,
             'primary_behavior': primary['behavior'] if primary else 'normal',
