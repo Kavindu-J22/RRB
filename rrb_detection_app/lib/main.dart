@@ -2,6 +2,7 @@
 import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/video_recording_screen.dart';
 import 'screens/results_screen.dart';
@@ -18,9 +19,7 @@ class RRBDetectionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: MaterialApp(
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
@@ -47,9 +46,7 @@ class RRBDetectionApp extends StatelessWidget {
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.grey[100],
           ),
@@ -58,6 +55,7 @@ class RRBDetectionApp extends StatelessWidget {
         routes: {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
           '/home': (context) => const HomeScreen(),
           '/record': (context) => const VideoRecordingScreen(),
           '/results': (context) => const ResultsScreen(),
