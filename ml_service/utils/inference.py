@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class RRBInference:
     """Inference engine for RRB detection"""
     
-    def __init__(self, 
+    def __init__(self,
                  model_path: str,
                  label_encoder_path: str,
                  sequence_length: int = 30,
@@ -27,7 +27,7 @@ class RRBInference:
                  min_duration: float = 3.0):
         """
         Initialize inference engine
-        
+
         Args:
             model_path: Path to trained model
             label_encoder_path: Path to label encoder
@@ -40,22 +40,32 @@ class RRBInference:
         self.img_size = img_size
         self.confidence_threshold = confidence_threshold
         self.min_duration = min_duration
-        
+
         # Load model
         print(f"Loading model from {model_path}...")
         self.model = load_model(model_path)
-        
+
         # Load label encoder
         print(f"Loading label encoder from {label_encoder_path}...")
         with open(label_encoder_path, 'rb') as f:
             self.label_encoder = pickle.load(f)
-        
-        # Initialize processors
+
+        # Initialize video processor
         self.video_processor = VideoProcessor(img_size=img_size)
-        self.pose_estimator = PoseEstimator()
-        
+
+        # Lazy-load pose estimator (only when needed for enhanced detection)
+        self._pose_estimator = None
+
         print("Inference engine initialized successfully")
-    
+
+    @property
+    def pose_estimator(self):
+        """Lazy-load pose estimator only when needed"""
+        if self._pose_estimator is None:
+            logger.info("Initializing PoseEstimator for enhanced detection...")
+            self._pose_estimator = PoseEstimator()
+        return self._pose_estimator
+
     def preprocess_video(self, video_path: str) -> Tuple[np.ndarray, Dict]:
         """
         Preprocess video for inference
@@ -301,20 +311,34 @@ class RRBInference:
     def batch_detect(self, video_paths: List[str]) -> List[Dict]:
         """
         Batch detection for multiple videos
-        
+
         Args:
             video_paths: List of video paths
-            
+
         Returns:
             List of detection results
         """
         results = []
-        
+
         for i, video_path in enumerate(video_paths):
             print(f"Processing video {i+1}/{len(video_paths)}: {video_path}")
             result = self.detect_rrb(video_path)
             result['video_path'] = video_path
             results.append(result)
-        
+
         return results
+
+    def cleanup(self):
+        """Cleanup resources"""
+        if self._pose_estimator is not None:
+            try:
+                self._pose_estimator.pose.close()
+                logger.info("PoseEstimator resources cleaned up")
+            except Exception as e:
+                logger.warning(f"Error cleaning up PoseEstimator: {str(e)}")
+            self._pose_estimator = None
+
+    def __del__(self):
+        """Destructor to ensure cleanup"""
+        self.cleanup()
 

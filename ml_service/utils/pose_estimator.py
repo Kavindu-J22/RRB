@@ -3,6 +3,7 @@ import mediapipe as mp
 import numpy as np
 from typing import List, Dict, Tuple, Optional
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -51,27 +52,36 @@ class PoseEstimator:
     def extract_landmarks(self, frame: np.ndarray) -> Optional[np.ndarray]:
         """
         Extract pose landmarks from a single frame
-        
+
         Args:
             frame: Input video frame (BGR format)
-            
+
         Returns:
             Array of normalized landmarks [x, y, z, visibility] or None if no pose detected
         """
-        # Convert BGR to RGB
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Process the frame
-        results = self.pose.process(frame_rgb)
-        
-        if results.pose_landmarks:
-            # Extract landmarks as numpy array
-            landmarks = []
-            for landmark in results.pose_landmarks.landmark:
-                landmarks.extend([landmark.x, landmark.y, landmark.z, landmark.visibility])
-            return np.array(landmarks)
-        
-        return None
+        try:
+            # Validate frame
+            if frame is None or frame.size == 0:
+                return None
+
+            # Convert BGR to RGB
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # Process the frame
+            results = self.pose.process(frame_rgb)
+
+            if results.pose_landmarks:
+                # Extract landmarks as numpy array
+                landmarks = []
+                for landmark in results.pose_landmarks.landmark:
+                    landmarks.extend([landmark.x, landmark.y, landmark.z, landmark.visibility])
+                return np.array(landmarks)
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Error extracting landmarks: {str(e)}")
+            return None
     
     def extract_key_landmarks(self, frame: np.ndarray) -> Optional[Dict[str, np.ndarray]]:
         """
@@ -106,6 +116,7 @@ class PoseEstimator:
         Returns:
             Tuple of (list of landmark arrays, fps of video)
         """
+        cap = None
         try:
             cap = cv2.VideoCapture(video_path)
 
@@ -155,8 +166,6 @@ class PoseEstimator:
                 if max_frames and frame_count >= max_frames:
                     break
 
-            cap.release()
-
             if len(landmarks_sequence) == 0:
                 logger.warning("No landmarks extracted from video")
 
@@ -164,9 +173,13 @@ class PoseEstimator:
 
         except Exception as e:
             logger.error(f"Error processing video for pose estimation: {str(e)}")
-            if 'cap' in locals():
-                cap.release()
+            logger.error(traceback.format_exc())
             return [], 30  # Return empty with default FPS
+
+        finally:
+            # Always release video capture
+            if cap is not None:
+                cap.release()
     
     def draw_landmarks(self, frame: np.ndarray, landmarks) -> np.ndarray:
         """
