@@ -1,7 +1,9 @@
+import os
+os.environ['TF_USE_LEGACY_KERAS'] = '1'  # Use tf-keras instead of keras 3.x
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import os
 import uuid
 from datetime import datetime
 import traceback

@@ -1,10 +1,11 @@
 import numpy as np
 import cv2
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
 import tensorflow as tf
-from tensorflow import keras
+from tensorflow.keras.models import load_model
 import pickle
 from typing import List, Dict, Tuple, Optional
-import os
 
 from .pose_estimator import PoseEstimator
 from .feature_extractor import FeatureExtractor
@@ -38,7 +39,7 @@ class RRBInference:
         
         # Load model
         print(f"Loading model from {model_path}...")
-        self.model = keras.models.load_model(model_path)
+        self.model = load_model(model_path)
         
         # Load label encoder
         print(f"Loading label encoder from {label_encoder_path}...")
