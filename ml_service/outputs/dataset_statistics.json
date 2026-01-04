@@ -1,0 +1,70 @@
+{
+  "categories": {
+    "atypical_hand_movements": {
+      "label": "atypical_hand_movements",
+      "folder": "Atypical Children Hand Movements",
+      "video_count": 40,
+      "total_duration": 3998.0485262563516,
+      "avg_duration": 99.95121315640878,
+      "total_frames": 98548,
+      "avg_fps": 24.64902548150842
+    },
+    "hand_flapping": {
+      "label": "hand_flapping",
+      "folder": "Atypical Children Head and Hand Movements/Hand_Flapping",
+      "video_count": 84,
+      "total_duration": 1021.015749268223,
+      "avg_duration": 12.154949396050274,
+      "total_frames": 26422,
+      "avg_fps": 25.878151261561868
+    },
+    "head_banging": {
+      "label": "head_banging",
+      "folder": "Atypical Children Head and Hand Movements/Head_Bagging",
+      "video_count": 40,
+      "total_duration": 1674.542503748126,
+      "avg_duration": 41.86356259370315,
+      "total_frames": 45716,
+      "avg_fps": 27.30059099585346
+    },
+    "head_nodding_atypical": {
+      "label": "head_nodding_atypical",
+      "folder": "Head Nodding",
+      "video_count": 12,
+      "total_duration": 566.0799999999999,
+      "avg_duration": 47.173333333333325,
+      "total_frames": 15480,
+      "avg_fps": 27.345958168456757
+    },
+    "spinning": {
+      "label": "spinning",
+      "folder": "Spinning",
+      "video_count": 26,
+      "total_duration": 2096.287013222712,
+      "avg_duration": 80.62642358548894,
+      "total_frames": 49780,
+      "avg_fps": 23.746748267772297
+    },
+    "normal": {
+      "label": "normal",
+      "folder": "Normal/Children",
+      "video_count": 42,
+      "total_duration": 1428.6758620689657,
+      "avg_duration": 34.01609195402299,
+      "total_frames": 42246,
+      "avg_fps": 29.570038328232553
+    },
+    "normal_adults": {
+      "label": "normal_adults",
+      "folder": "Normal/Adults",
+      "video_count": 2,
+      "total_duration": 47.86206896551724,
+      "avg_duration": 23.93103448275862,
+      "total_frames": 1388,
+      "avg_fps": 29.000000000000004
+    }
+  },
+  "total_videos": 246,
+  "total_duration": 10832.511723529891,
+  "total_size_mb": 1339.0339260101318
+}

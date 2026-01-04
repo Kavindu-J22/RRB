@@ -37,15 +37,7 @@ env/
 .DS_Store
 Thumbs.db
 
-# Project specific
-uploads/
-processed/
-logs/
-outputs/
-preprocessed_data/
-models/*.h5
-models/*.pkl
-*.log
+
 
 
 
