@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -85,6 +86,58 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
     }
   }
 
+  // Upload video from gallery/files
+  Future<void> _uploadVideo() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      // Pick video from gallery using image_picker (same as record flow)
+      final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+
+      if (video != null) {
+        // Check file size (max 100MB)
+        final fileSize = await video.length();
+        if (fileSize > 100 * 1024 * 1024) {
+          Fluttertoast.showToast(
+            msg: 'Video file is too large. Maximum size is 100MB',
+            backgroundColor: Colors.red,
+          );
+          return;
+        }
+
+        setState(() {
+          _videoFile = video;
+          // On web, video.path might be empty, so use video.name instead
+          if (kIsWeb) {
+            _videoPath = video.name.isNotEmpty ? video.name : 'video.mp4';
+            // Ensure it has .mp4 extension
+            if (!_videoPath!.toLowerCase().endsWith('.mp4') &&
+                !_videoPath!.toLowerCase().endsWith('.avi') &&
+                !_videoPath!.toLowerCase().endsWith('.mov') &&
+                !_videoPath!.toLowerCase().endsWith('.mkv')) {
+              _videoPath = '$_videoPath.mp4';
+            }
+          } else {
+            _videoPath = video.path;
+          }
+        });
+
+        Fluttertoast.showToast(
+          msg: 'Video selected: ${video.name}',
+          backgroundColor: Colors.green,
+        );
+
+        // Show process dialog
+        _showProcessDialog();
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Failed to select video: $e',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
   // Web: Pick video using image_picker
   Future<void> _pickVideoWeb() async {
     try {
@@ -163,6 +216,7 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
       final video = await _cameraController!.stopVideoRecording();
       setState(() {
         _isRecording = false;
+        _videoFile = video;
         _videoPath = video.path;
       });
 
@@ -221,9 +275,19 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
 
     try {
       // Read video bytes (works on both web and mobile)
-      final videoBytes = kIsWeb
-          ? await _videoFile!.readAsBytes()
-          : await File(_videoPath!).readAsBytes();
+      late final Uint8List videoBytes;
+
+      // Check if we have XFile (from camera recording on web or mobile)
+      if (_videoFile != null) {
+        // Use XFile for web camera recording or image_picker
+        videoBytes = await _videoFile!.readAsBytes();
+      } else if (_videoPath != null) {
+        // Use file path for mobile file picker or camera recording
+        final bytes = await File(_videoPath!).readAsBytes();
+        videoBytes = Uint8List.fromList(bytes);
+      } else {
+        throw Exception('No video file available');
+      }
 
       final result = await _videoService.detectRRB(_videoPath!, videoBytes);
 
@@ -288,10 +352,10 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
       );
     }
 
-    // Web: Show simple button to pick video
+    // Web: Show simple buttons to pick or upload video
     if (kIsWeb) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Record Video')),
+        appBar: AppBar(title: const Text('RRB Detection')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -299,32 +363,56 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
               const Icon(Icons.videocam, size: 100, color: Colors.blue),
               const SizedBox(height: 30),
               const Text(
-                'Click the button below to record a video',
-                style: TextStyle(fontSize: 18),
+                'Choose an option to get started',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               const Text(
-                'Your browser will ask for camera permission',
+                'Record a new video or upload an existing one',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              ElevatedButton.icon(
-                onPressed: _pickVideoWeb,
-                icon: const Icon(Icons.videocam, size: 30),
-                label: const Text(
-                  'Record Video',
-                  style: TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 20,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Upload Video Button
+                  ElevatedButton.icon(
+                    onPressed: _uploadVideo,
+                    icon: const Icon(Icons.upload_file, size: 30),
+                    label: const Text(
+                      'Upload Video',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 20,
+                      ),
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
+                  const SizedBox(width: 20),
+                  // Record Video Button
+                  ElevatedButton.icon(
+                    onPressed: _pickVideoWeb,
+                    icon: const Icon(Icons.videocam, size: 30),
+                    label: const Text(
+                      'Record Video',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 20,
+                      ),
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -364,14 +452,50 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
                   ),
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    FloatingActionButton(
-                      onPressed: _isRecording
-                          ? _stopRecording
-                          : _startRecording,
-                      backgroundColor: _isRecording ? Colors.red : Colors.blue,
-                      child: Icon(_isRecording ? Icons.stop : Icons.videocam),
+                    // Upload Video Button
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FloatingActionButton(
+                          onPressed: _uploadVideo,
+                          backgroundColor: Colors.green,
+                          heroTag: 'upload',
+                          child: const Icon(Icons.upload_file),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Upload',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    // Record Video Button
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FloatingActionButton(
+                          onPressed: _isRecording
+                              ? _stopRecording
+                              : _startRecording,
+                          backgroundColor: _isRecording
+                              ? Colors.red
+                              : Colors.blue,
+                          heroTag: 'record',
+                          child: Icon(
+                            _isRecording ? Icons.stop : Icons.videocam,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isRecording ? 'Stop' : 'Record',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

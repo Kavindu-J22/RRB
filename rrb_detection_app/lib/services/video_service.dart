@@ -40,7 +40,15 @@ class VideoService {
       );
 
       // Add video file using bytes (web-compatible)
-      final filename = path.basename(videoPath);
+      String filename = path.basename(videoPath);
+
+      // Ensure filename has a valid video extension
+      final ext = path.extension(filename).toLowerCase();
+      if (ext != '.mp4' && ext != '.avi' && ext != '.mov' && ext != '.mkv') {
+        // If no valid extension, append .mp4
+        filename = '$filename.mp4';
+      }
+
       final mimeType = _getMimeType(filename);
 
       request.files.add(
@@ -83,7 +91,15 @@ class VideoService {
       );
 
       // Add video file using bytes (web-compatible)
-      final filename = path.basename(videoPath);
+      String filename = path.basename(videoPath);
+
+      // Ensure filename has a valid video extension
+      final ext = path.extension(filename).toLowerCase();
+      if (ext != '.mp4' && ext != '.avi' && ext != '.mov' && ext != '.mkv') {
+        // If no valid extension, append .mp4
+        filename = '$filename.mp4';
+      }
+
       final mimeType = _getMimeType(filename);
 
       request.files.add(
