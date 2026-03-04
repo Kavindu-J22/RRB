@@ -331,20 +331,323 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── Processing State ──────────────────────────────────────────────────────
     if (_isProcessing) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Processing Video')),
+        backgroundColor: const Color(0xFFF4F6FB),
+        appBar: AppBar(
+          title: const Text(
+            'Analyzing Video',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFF1A237E),
+          iconTheme: const IconThemeData(color: Colors.white),
+          automaticallyImplyLeading: false,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A237E), Color(0xFF1976D2)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1976D2).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'AI Analysis in Progress',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A237E),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Our deep learning model is analyzing every frame of your video to identify behavioral patterns. This may take a few moments.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF546E7A),
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F2FD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF90CAF9)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF1976D2),
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Please do not close the app during analysis.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF1565C0),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ── Web View ──────────────────────────────────────────────────────────────
+    if (kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F6FB),
+        appBar: AppBar(
+          title: const Text(
+            'Video Capture',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFF1A237E),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1A237E), Color(0xFF1976D2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.video_library_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Provide a Clinical Video',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Upload an existing recording or capture a new one using your camera.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Instructions Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFFE082)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.checklist_rounded,
+                          color: Color(0xFFF9A825),
+                          size: 22,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Video Requirements & Guidelines',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
+                            color: Color(0xFF6D4C0E),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ..._buildRequirementRows(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Options Label
+              const Text(
+                'Choose Your Option',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A237E),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Upload Video Card
+              _VideoOptionCard(
+                icon: Icons.upload_file_rounded,
+                title: 'Upload Existing Video',
+                subtitle:
+                    'Select a pre-recorded clinical observation video from your device storage.',
+                badgeText: 'RECOMMENDED',
+                badgeColor: const Color(0xFF2E7D32),
+                gradientColors: const [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+                features: const [
+                  'MP4, AVI, MOV, MKV formats accepted',
+                  'Maximum file size: 100 MB',
+                  'Ensure clear visibility of the subject',
+                ],
+                onTap: _uploadVideo,
+              ),
+              const SizedBox(height: 16),
+
+              // Record Video Card
+              _VideoOptionCard(
+                icon: Icons.videocam_rounded,
+                title: 'Record New Video',
+                subtitle:
+                    'Use your device camera to record a live clinical observation session.',
+                badgeText: 'LIVE',
+                badgeColor: const Color(0xFF1565C0),
+                gradientColors: const [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                features: const [
+                  'Maximum recording duration: 5 minutes',
+                  'Hold device steady for best results',
+                  'Ensure good lighting conditions',
+                ],
+                onTap: _pickVideoWeb,
+              ),
+              const SizedBox(height: 24),
+
+              // Best Practices
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFA5D6A7)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.tips_and_updates_rounded,
+                          color: Color(0xFF2E7D32),
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Best Practices for Accurate Detection',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ..._buildTipRows([
+                      'Ensure the child\'s full body is visible in the frame',
+                      'Use a stable camera position or tripod',
+                      'Record in a well-lit, distraction-free environment',
+                      'Avoid sudden camera movements during recording',
+                      'The child should be the primary subject in the video',
+                    ]),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── Mobile: Camera Initializing ───────────────────────────────────────────
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F6FB),
+        appBar: AppBar(
+          title: const Text(
+            'Record Video',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFF1A237E),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
         body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Analyzing video for RRB detection...'),
-              SizedBox(height: 10),
+              CircularProgressIndicator(color: Color(0xFF1976D2)),
+              SizedBox(height: 16),
               Text(
-                'This may take a few moments',
-                style: TextStyle(color: Colors.grey),
+                'Initializing Camera...',
+                style: TextStyle(color: Color(0xFF546E7A)),
               ),
             ],
           ),
@@ -352,155 +655,438 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
       );
     }
 
-    // Web: Show simple buttons to pick or upload video
-    if (kIsWeb) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('RRB Detection')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.videocam, size: 100, color: Colors.blue),
-              const SizedBox(height: 30),
-              const Text(
-                'Choose an option to get started',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Record a new video or upload an existing one',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Upload Video Button
-                  ElevatedButton.icon(
-                    onPressed: _uploadVideo,
-                    icon: const Icon(Icons.upload_file, size: 30),
-                    label: const Text(
-                      'Upload Video',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 20,
+    // ── Mobile: Camera Preview ────────────────────────────────────────────────
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text(
+          'Record Video',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          // Camera Preview
+          Positioned.fill(child: CameraPreview(_cameraController!)),
+
+          // Recording Indicator
+          if (_isRecording)
+            Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.fiber_manual_record,
+                        color: Colors.red,
+                        size: 14,
                       ),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                      SizedBox(width: 6),
+                      Text(
+                        'REC  ·  Max 5:00 min',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Bottom Controls
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.9),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Instruction line
+                  if (!_isRecording)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Min: 10 sec  ·  Max: 5 min  ·  Keep camera steady',
+                        style: TextStyle(color: Colors.white60, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Upload Button
+                      _CameraButton(
+                        icon: Icons.upload_file_rounded,
+                        label: 'Upload',
+                        color: const Color(0xFF2E7D32),
+                        onTap: _uploadVideo,
+                        heroTag: 'upload',
+                      ),
+                      // Record Button (large center)
+                      GestureDetector(
+                        onTap: _isRecording ? _stopRecording : _startRecording,
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isRecording
+                                ? Colors.red
+                                : const Color(0xFF1976D2),
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    (_isRecording
+                                            ? Colors.red
+                                            : const Color(0xFF1976D2))
+                                        .withValues(alpha: 0.5),
+                                blurRadius: 14,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isRecording
+                                ? Icons.stop_rounded
+                                : Icons.videocam_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                      // Placeholder for symmetry
+                      const SizedBox(width: 60),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildRequirementRows() {
+    final items = [
+      ('timer', 'Minimum Duration', '10 seconds'),
+      ('hourglass_top', 'Maximum Duration', '5 minutes'),
+      ('folder', 'Accepted Formats', 'MP4, AVI, MOV, MKV'),
+      ('storage', 'Maximum File Size', '100 MB'),
+      ('hd', 'Recommended Quality', '720p or higher at 30 FPS'),
+    ];
+    return items.map((item) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: Color(0xFFF9A825),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4E342E),
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '${item.$2}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    TextSpan(text: item.$3),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildTipRows(List<String> tips) {
+    return tips
+        .map(
+          (tip) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '•  ',
+                  style: TextStyle(color: Color(0xFF2E7D32), fontSize: 14),
+                ),
+                Expanded(
+                  child: Text(
+                    tip,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF2E4A2E),
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  // Record Video Button
-                  ElevatedButton.icon(
-                    onPressed: _pickVideoWeb,
-                    icon: const Icon(Icons.videocam, size: 30),
-                    label: const Text(
-                      'Record Video',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 20,
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList();
+  }
+}
+
+// ── Helper Widgets ────────────────────────────────────────────────────────────
+
+class _VideoOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String badgeText;
+  final Color badgeColor;
+  final List<Color> gradientColors;
+  final List<String> features;
+  final VoidCallback onTap;
+
+  const _VideoOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.badgeText,
+    required this.badgeColor,
+    required this.gradientColors,
+    required this.features,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.white,
+      elevation: 2,
+      shadowColor: gradientColors.first.withValues(alpha: 0.2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: gradientColors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A237E),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: badgeColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                badgeText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFF78909C),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Mobile/Desktop: Show camera preview
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Record Video')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Record Video')),
-      body: Column(
-        children: [
-          Expanded(child: CameraPreview(_cameraController!)),
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: Colors.black87,
-            child: Column(
-              children: [
-                if (_isRecording)
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              ...features.map(
+                (f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
                     children: [
-                      Icon(Icons.fiber_manual_record, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text(
-                        'Recording...',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: gradientColors.first,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          f,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFF455A64),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Upload Video Button
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        FloatingActionButton(
-                          onPressed: _uploadVideo,
-                          backgroundColor: Colors.green,
-                          heroTag: 'upload',
-                          child: const Icon(Icons.upload_file),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Upload',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    // Record Video Button
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        FloatingActionButton(
-                          onPressed: _isRecording
-                              ? _stopRecording
-                              : _startRecording,
-                          backgroundColor: _isRecording
-                              ? Colors.red
-                              : Colors.blue,
-                          heroTag: 'record',
-                          child: Icon(
-                            _isRecording ? Icons.stop : Icons.videocam,
-                          ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title.contains('Upload')
+                            ? 'Choose File'
+                            : 'Open Camera',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _isRecording ? 'Stop' : 'Record',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CameraButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final String heroTag;
+
+  const _CameraButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    required this.heroTag,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
+            child: Icon(icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
       ),
